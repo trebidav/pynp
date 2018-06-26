@@ -1,5 +1,5 @@
 # pynp.py
-# author: Darin Webb @Cat5InTheCradle
+# original author: Darin Webb @Cat5InTheCradle
 
 import requests
 
@@ -41,6 +41,10 @@ class NodePingInterface:
 		response = self.api_accounts_get({'customerid':customerid})
 		return response
 
+	def get_account_by_id(self, accountid):
+		response = self.api_accounts_get({'id':accountid})
+		return response
+
 	def new_subaccount(self, name, contactname, email, timezone="-5", location="nam", emailme="no"):
 		payload = {
 			'token':self.apitoken,
@@ -54,6 +58,58 @@ class NodePingInterface:
 		response = requests.post('https://api.nodeping.com/api/1/accounts', json=payload).json()
 		return response
 
+	def get_contacts(self, customerid):
+		payload = {
+			'token': self.apitoken,
+			'customerid': customerid
+		}
+		response = requests.get('https://api.nodeping.com/api/1/contacts?', json=payload).json()
+		return response
+
+	def new_check(self, label, type, target, interval, customerid, details=None):
+
+		contacts = []
+
+		for key, value in self.get_contacts(customerid).items():
+			for identity in value["addresses"]:
+				contacts.append(identity)
+
+#		for key, value in self.get_contacts(customerid).items():
+#			contacts.append(key)
+
+		c = []
+		for contact in contacts:
+			c.append({contact: {"delay":0, "schedule":"All the time"}})
+
+
+		payload = {
+			'token': self.apitoken,
+			'customerid': customerid,
+			'label': label,
+			'interval': interval,
+			'enable': 'true',
+			'treshold': 20,
+			'type': type,
+			'target': target,
+			'notifications': c
+#			'ssh_user': ssh_user,
+#			'ssh_password': ssh_password, 
+#			'ssh_port': ssh_port, 
+#			'contentstring': contentstring,
+#			'invert' : invert
+
+		}
+
+		if details is not None:
+			for key,value in details.items():
+				payload[key]=value
+
+		print(payload)
+
+		response = requests.post('https://api.nodeping.com/api/1/checks', json=payload).json()
+		return response
+	
+		
 	# Checks
 	# --------------------------
 
